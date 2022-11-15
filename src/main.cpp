@@ -262,7 +262,7 @@ void TurnOffLoad(TkindDUT kind) {
 
 TkindDUT TestDeviceKind() {
   bool NpnOn = false, NpnOff = false, PnpOn = false, PnpOff = false; // On state for NPN/PNP with base on/off
-  int TestCur = 40; // Test vurrent to indentify DUT in 117 uA steps (voltage drop over resistor R3 in 11.7 mV steps)
+  int TestCur = 40; // Test current to indentify DUT in 117 uA steps (voltage drop over resistor R3 in 11.7 mV steps)
   TkindDUT kind;
 
   SetDacVcc(MidDacVcc, 0); // Set DACs for ON test of both NPN & PNP with medium DacVcc
@@ -450,7 +450,7 @@ int GetNpnGain() {
   }
   for (base = MinDacBase; base <= MaxDacBase; base++) {
     SetDacBase(base, 5);
-    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) >= VccEnd) { // Collector current through load resistor R3 (100R) in 0,12 mA steps
+    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) >= VccEnd) { // Collector current through load resistor R3 (100R) in 0.117mA steps
       hFE = float((VccEnd - VccStart) * 117.0) / ((base - StartBase) * 166.0 / 100.0);
       TurnOffLoad(tkNPN);
 
@@ -488,7 +488,7 @@ int GetPnpGain() {
   SetDacBase(MaxDacBase, 10);
   for (base = MinDacBase; base <= MaxDacBase; base++) {
     SetDacBase(MaxDacBase - base, 1);
-    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) >= VccEnd) { // Collector current through load resistor R3 (100R) in 0,117 mA steps
+    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) >= VccEnd) { // Collector current through load resistor R3 (100R) in 117 uA steps
       hFE = float((VccEnd - VccStart) * 117.0) / ((base - StartBase) * 166.0 / 100.0);
       TurnOffLoad(tkPNP);
 
@@ -516,7 +516,7 @@ int GetNMosfetThreshold() {
   SetDacBase(MinDacBase, 20);
   for (gate = MinDacBase; gate <= MaxDacBase; gate++) {
     SetDacBase(gate, 1); // gate is approx in 50s of mV
-    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 10) { // Voltage drop over load resistor R3 (100R) in 11,7 mV steps
+    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 10) { // Voltage drop over load resistor R3 (100R) in 11.7 mV steps
       TurnOffLoad(tkNMOSFET);
       return float((gate * 117.0) / MaxDacBase); // Result in 100s of mV
    }
@@ -538,7 +538,7 @@ int GetNMosfetThreshold() {
   SetDacBase(MaxDacBase, 20);
   for (gate = 0; gate <= MaxDacBase; gate++) {
     SetDacBase((GatePMosFactor) - gate, 1);  // gate is approx in 50s of mV
-    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 10) { // Voltage drop over load resistor R3 (100R) in 11,7 mV steps
+    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 10) { // Voltage drop over load resistor R3 (100R) in 11.7 mV steps
       TurnOffLoad(tkPMOSFET);
       return float((gate * 117.0) / MaxDacBase); // Result in 100s of mV
     }
@@ -561,7 +561,7 @@ int GetNDiodeForwardVoltage() {
   SetDacVcc(MinDacVcc, 20);
   for (Vf = MinDacVcc; Vf <= MaxDacVcc; Vf++) {
     SetDacVcc(Vf, 1);
-    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 9) { // Voltage drop over load resistor R3 in 11,7 mV steps
+    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 9) { // Voltage drop over load resistor R3 in 11.7 mV steps
       int AdcVcc = GetAdcSmooth(pin_ADC_NPN_Vcc);
       TurnOffLoad(tkNDiode);
       return float(AdcVcc * 11.7 / 100.0);
@@ -583,7 +583,7 @@ int GetPDiodeForwardVoltage() {
   SetDacVcc(MaxDacVcc, 20);
   for (Vf = MaxDacVcc; Vf >= MinDacVcc; Vf--) {
     SetDacVcc(Vf, 1);
-    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 9) { // Voltage drop over load resistor R3 in 11,7 mV steps
+    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 9) { // Voltage drop over load resistor R3 in 11.7 mV steps
       int AdcVce = GetAdcSmooth(pin_ADC_PNP_Vce);
       TurnOffLoad(tkPDiode);
       return float((AdcMax - AdcVce) * 11.7 / 100.0);
