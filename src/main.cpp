@@ -552,7 +552,7 @@ int GetNMosfetThreshold() {
 //
 //   Formula for Vf in 100s of mV:
 //     Vf = ADC * 10 * (R2 + R1)*AdcVref / ADC_MAX / R1
-//     Good enough with Integer: Vf = ADC * 12 / 100
+//     Vf = ADC * 11.7 / 100
 //-------------------------------------------------------------------------
 
 
@@ -575,7 +575,7 @@ int GetNDiodeForwardVoltage() {
 //   calc forward voltage of Diode ; result in 100s of mV
 //   Formula for Vf in 100s of mV:
 //     Vf = ADC * 10 * (R2 + R1)*AdcVref / ADC_MAX / R1
-//     Good enough with Integer: Vf = ADC * 12 / 100
+//     Vf = ADC * 11.7 / 100
 //-------------------------------------------------------------------------
 
 int GetPDiodeForwardVoltage() {
@@ -586,7 +586,7 @@ int GetPDiodeForwardVoltage() {
     if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 9) { // Voltage drop over load resistor R3 in 11,7 mV steps
       int AdcVce = GetAdcSmooth(pin_ADC_PNP_Vce);
       TurnOffLoad(tkPDiode);
-      return float((AdcMax - AdcVce) * 11.7 / 100);
+      return float((AdcMax - AdcVce) * 11.7 / 100.0);
     }
   }
   return 0;
