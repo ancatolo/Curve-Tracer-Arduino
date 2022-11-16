@@ -1014,72 +1014,72 @@ void ExecSetupMenu() {
   ClearDisplay(TFT_BLACK);
 
   const int Col1 = 10;
-  const int Col2 = 137;
+  const int Col2 = 140;
   const int Col3 = 180;
   const int Col4 = 215;    
-  const int TextRight = 250;
-  const int TextTop = 45;
-  const int ValWidth = 32;
-  const int BoxTop = 28;
-  const int RowHeight = 25; //35
-  const int BoxSize = 24; //34
-  int ParNo;  // Parameter position in Setup Menue
+  const int Col5 = 255;
+  const int FirstRow = 45;
+  const int RowHeight = 25;
+  const int FirstBox = FirstRow - 17;
+  const int BoxSize = RowHeight - 1;
+  const int ClearWidth = 32;
+  int RowNo;  // Parameter position in Setup Menue
+  char str[12]; // For converting and concaternating
 
   DrawStringAt((TFT_WID - 60) / 2, 15, "Setup", LargeFont, TFT_LIGHTGREY); // Header text
 
-  ParNo = 1; // Parameter order number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "No of curves", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(NoOfCurves, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  DrawStringAt(TextRight, TextTop + (RowHeight * (ParNo - 1)), "", MediumFont, TFT_WHITE);
+  RowNo = 0;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "No of curves", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(NoOfCurves, 1, 0, str), MediumFont, TFT_YELLOW);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 2; // Parameter order number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "Max load current", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(mAmax, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  DrawStringAt(TextRight, TextTop + (RowHeight * (ParNo - 1)), "mA", MediumFont, TFT_WHITE);
+  RowNo = 1;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Max load current", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(mAmax, 1, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "mA", MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 3; // Parameter order number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "Min base current", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(MinIbase, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  DrawStringAt(TextRight, TextTop + (RowHeight * (ParNo - 1)), "uA", MediumFont, TFT_WHITE);
+  RowNo = 2;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Min base current", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinIbase, 1, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "uA", MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 4; // Parameter order number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "Max base current", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(MaxIbase, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  DrawStringAt(TextRight, TextTop + (RowHeight * (ParNo - 1)), "uA", MediumFont, TFT_WHITE);
+  RowNo = 3;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Max base current", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxIbase, 1, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "uA", MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 5; // Parameter order number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "Min gate voltage", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawDecimal(MinVgate, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  DrawStringAt(TextRight, TextTop + (RowHeight * (ParNo - 1)), "V", MediumFont, TFT_WHITE);
+  RowNo = 4;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Min gate voltage", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinVgate, 1, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "V", MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 6; // Parameter order number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "Max gate voltage", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawDecimal(MaxVgate, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  DrawStringAt(TextRight, TextTop + (RowHeight * (ParNo - 1)), "V", MediumFont, TFT_WHITE);
+  RowNo = 5;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Max gate voltage", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxVgate, 1, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "V", MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
   // Exit button
   const int ExitWidth = 50;
@@ -1102,70 +1102,70 @@ void ExecSetupMenu() {
 
 // Increment / decrement parameter values
 
-      ParNo = 1; // Parameter order number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+      RowNo = 0;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if (NoOfCurves < 15) NoOfCurves += 1;
         } else if (x < Col3) {
           if (NoOfCurves > 2) NoOfCurves -= 1;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(NoOfCurves, MediumFont, TFT_YELLOW); // New value
+        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(NoOfCurves, 1, 0, str), MediumFont, TFT_YELLOW);
       }
 
-      ParNo = 2; // Parameter order number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+      RowNo = 1;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if (mAmax < 100) mAmax += 10;
         } else if (x < Col3) {
           if (mAmax > 10) mAmax -= 10;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(mAmax, MediumFont, TFT_YELLOW); // New value
+        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(mAmax, 1, 0, str), MediumFont, TFT_YELLOW);
       }
 
-      ParNo = 3; // Parameter order number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+      RowNo = 2;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if (MinIbase < MaxIbase - StepIbase) MinIbase += StepIbase;
         } else if (x < Col3) {
           if (MinIbase > 0) MinIbase -= StepIbase;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(MinIbase, MediumFont, TFT_YELLOW); // New value
+        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinIbase, 1, 0, str), MediumFont, TFT_YELLOW);
       }
 
-      ParNo = 4; // Parameter order number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+      RowNo = 3;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if (MaxIbase < 420) MaxIbase += StepIbase; // Base resistor of 27 K limits base current to 420 uA
         } else if (x < Col3) {
           if (MaxIbase > MinIbase + StepIbase) MaxIbase -= StepIbase;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(MaxIbase, MediumFont, TFT_YELLOW); // New value
+        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxIbase, 1, 0, str), MediumFont, TFT_YELLOW);
       }
 
-      ParNo = 5; // Parameter order number
-      if (y > BoxTop + (RowHeight * (ParNo - 1))&& y < BoxTop + RowHeight * ParNo) {
+      RowNo = 4;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if (MinVgate < MaxVgate - 1) MinVgate += 1;
         } else if (x < Col3) {
           if (MinVgate > 0) MinVgate -= 1;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawDecimal(MinVgate, MediumFont, TFT_YELLOW); // New value
+        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinVgate, 1, 0, str), MediumFont, TFT_YELLOW);
       }
 
-      ParNo = 6; // Parameter order number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+      RowNo = 5;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if (MaxVgate < 120) MaxVgate += 1;
         } else if (x < Col3) {
           if (MaxVgate > MinVgate + 1) MaxVgate -= 1;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawDecimal(MaxVgate, MediumFont, TFT_YELLOW); // New value
+        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxVgate, 1, 0, str), MediumFont, TFT_YELLOW);
       }
 
       delay(100); // Delay for increase / decrease of parameter values
@@ -1186,56 +1186,54 @@ void ExecToolMenu() {
   const int Col3 = 180;
   const int Col4 = 215;
   const int Col5 = 255;
-  const int TextTop = 45;
-  const int ValWidth = 32;
-  const int BoxTop = 28;
-  const int RowHeight = 25; //35
-  const int BoxSize = 24; //34
-  int ParNo;  // Parameter position in Setup Menue
+  const int FirstRow = 45;
+  const int RowHeight = 25;
+  const int FirstBox = FirstRow - 17;
+  const int BoxSize = RowHeight - 1;
+  const int ClearWidth = 32;
+  int RowNo;
+  char str[12]; // For converting and concaternating
+
   int DacBase = 130;
   int DacVcc = 130;
 
   DrawStringAt((TFT_WID - 40) / 2, 15, "Tools", LargeFont, TFT_LIGHTGREY); // Header text
 
-  ParNo = 1; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "DAC Vcc (load)", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(DacVcc, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col5, TextTop + (RowHeight * (ParNo - 1)));
-    DrawDecimal((DacVcc * 12 * 10) / MaxDacVcc, MediumFont, TFT_WHITE);
-    DrawString(" V", MediumFont, TFT_WHITE);
+  RowNo = 0;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "DAC Vcc (load)", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacVcc, 3, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacVcc * 11.7 / MaxDacVcc, 5, 1, str), " V"), MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 2; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "DAC Base/Gate", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(DacBase, MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + BoxSize / 2 - 3, BoxTop + BoxSize / 2 + 3 + (RowHeight * (ParNo - 1)), "-", MediumFont, TFT_WHITE);
-  DrawFrame(Col4, BoxTop + (RowHeight * (ParNo - 1)), BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + BoxSize / 2 - 5, BoxTop + BoxSize / 2 + 5 + (RowHeight * (ParNo - 1)), "+", MediumFont, TFT_WHITE);
-  ILI9341SetCursor(Col5, TextTop + (RowHeight * (ParNo - 1)));
-    DrawDecimal((DacBase * 12 * 10) / MaxDacBase, MediumFont, TFT_WHITE);
-    DrawString(" V", MediumFont, TFT_WHITE);
+  RowNo = 1;
+  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "DAC Base/Gate", MediumFont, TFT_WHITE);
+  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacBase, 3, 0, str), MediumFont, TFT_YELLOW);
+  DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacBase * 11.7 / MaxDacBase, 5, 1, str), " V"), MediumFont, TFT_WHITE);
+  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
+  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
 
-  ParNo = 3; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "ADC NPN side", MediumFont, TFT_WHITE);
+  RowNo = 2;
+  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC NPN side", MediumFont, TFT_WHITE);
 
-  ParNo = 4; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "ADC PNP side", MediumFont, TFT_WHITE);
+  RowNo = 3;
+  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC PNP side", MediumFont, TFT_WHITE);
 
-  ParNo = 5; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "BJT Gain (hFE)", MediumFont, TFT_WHITE);
+  RowNo = 4;
+  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "BJT Gain (hFE)", MediumFont, TFT_WHITE);
 
-  ParNo = 6; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "", MediumFont, TFT_WHITE);
+  RowNo = 5;
+  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "", MediumFont, TFT_WHITE);
 
-  ParNo = 7; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "ADC Supply V", MediumFont, TFT_WHITE);
+  RowNo = 6;
+  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC Supply V", MediumFont, TFT_WHITE);
 
-  ParNo = 8; // Parameter number
-  DrawStringAt(Col1, TextTop + (RowHeight * (ParNo - 1)), "ADC 12 V", MediumFont, TFT_WHITE);
+  RowNo = 7;
+  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC 12 V", MediumFont, TFT_WHITE);
 
   // Exit button
   const int ExitWidth = 50;
@@ -1246,7 +1244,7 @@ void ExecToolMenu() {
   DrawStringAt(ExitLeft + 10, ExitTop + 18, "Exit", MediumFont, TFT_GREEN);
 
   
-  int x, y; // Display touch coordinates
+  int x, y; // Touch coordinates
   bool ExitButton = false;
   static unsigned long time = 0;
 
@@ -1257,44 +1255,39 @@ void ExecToolMenu() {
       }
 
 // Increment / decrement parameter values
-      ParNo = 1; // Parameter number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+
+      RowNo = 0;
+      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if      (DacVcc >= MinDacVcc && DacVcc <=  29) DacVcc +=  1;
           else if (DacVcc >= 30        && DacVcc <= 210) DacVcc += 10;
-          else if (DacVcc > 210        && DacVcc <  MaxDacVcc) DacVcc +=  1;
+          else if (DacVcc > 210        && DacVcc <  MaxDacVcc) DacVcc += 1;
         } else if (x < Col3) {
-          if      (DacVcc > MinDacVcc && DacVcc <=  39) DacVcc -=  1;
-          else if (DacVcc >= 40       && DacVcc <= 220) DacVcc -= 10;
-          else if (DacVcc > 220       && DacVcc <= MaxDacVcc) DacVcc -=  1;
+          if      (DacVcc > MinDacVcc  && DacVcc <=  39) DacVcc -=  1;
+          else if (DacVcc >= 40        && DacVcc <= 220) DacVcc -= 10;
+          else if (DacVcc > 220        && DacVcc <= MaxDacVcc) DacVcc -= 1;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(DacVcc, MediumFont, TFT_YELLOW);
-
-        DrawBox(Col5, BoxTop + (RowHeight * (ParNo - 1)), ValWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col5, TextTop + (RowHeight * (ParNo - 1)));
-          DrawDecimal((DacVcc * 12 * 10) / MaxDacVcc, MediumFont, TFT_WHITE);
-          DrawString(" V", MediumFont, TFT_WHITE);
+        DrawBox(Col3, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacVcc, 3, 0, str), MediumFont, TFT_YELLOW);
+        DrawBox(Col5, FirstBox + (RowHeight * RowNo), ClearWidth * 2, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacVcc * 11.7 / MaxDacVcc, 5, 1, str), " V"), MediumFont, TFT_WHITE);
       }
 
-      ParNo = 2; // Parameter number
-      if (y > BoxTop + (RowHeight * (ParNo - 1)) && y < BoxTop + RowHeight * ParNo) {
+      RowNo = 1;
+      if (y > FirstBox + (RowHeight * RowNo) && y < FirstBox + (RowHeight * (RowNo + 1))) {
         if (x > Col3 && x < TFT_WID - ExitWidth) {
           if      (DacBase >= MinDacVcc && DacBase <=  29) DacBase +=  1;
           else if (DacBase >= 30        && DacBase <= 210) DacBase += 10;
-          else if (DacBase > 210        && DacBase <  MaxDacVcc) DacBase +=  1;
+          else if (DacBase > 210        && DacBase <  MaxDacVcc) DacBase += 1;
         } else if (x < Col3) {
-          if      (DacBase > MinDacVcc && DacBase <=  39) DacBase -=  1;
+          if      (DacBase > MinDacVcc  && DacBase <=  39) DacBase -=  1;
           else if (DacBase >= 40        && DacBase <= 220) DacBase -= 10;
-          else if (DacBase > 220        && DacBase <= MaxDacVcc) DacBase -=  1;
+          else if (DacBase > 220        && DacBase <= MaxDacVcc) DacBase -= 1;
         }
-        DrawBox(Col3, BoxTop + (RowHeight * (ParNo - 1)), RowHeight, ValWidth, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col3, TextTop + (RowHeight * (ParNo - 1))); DrawInt(DacBase, MediumFont, TFT_YELLOW);
-
-        DrawBox(Col5, BoxTop + (RowHeight * (ParNo - 1)), ValWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-        ILI9341SetCursor(Col5, TextTop + (RowHeight * (ParNo - 1)));
-          DrawDecimal((DacBase * 12 * 10) / MaxDacBase, MediumFont, TFT_WHITE);
-          DrawString(" V", MediumFont, TFT_WHITE);
+        DrawBox(Col3, FirstBox + (RowHeight * RowNo), RowHeight, ClearWidth, TFT_BLACK); // Clear old value
+        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacBase, 3, 0, str), MediumFont, TFT_YELLOW);
+        DrawBox(Col5, FirstBox + (RowHeight * RowNo), ClearWidth * 2, RowHeight, TFT_BLACK); // Clear old value
+        DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacBase * 11.7 / MaxDacBase, 5, 1, str), " V"), MediumFont, TFT_WHITE);
       }
 
       delay(100); // Delay for increase / decrease of parameter values
@@ -1308,58 +1301,37 @@ void ExecToolMenu() {
       int PnpVce = GetAdcSmooth(pin_ADC_PNP_Vce);
       int PnpVcc = GetAdcSmooth(pin_ADC_PNP_Vcc);
 
-      ParNo = 3; // Parameter number
-      DrawBox(Col2, BoxTop + (RowHeight * (ParNo - 1)), ValWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col2, TextTop + (RowHeight * (ParNo - 1)));
-        DrawInt(NpnVcc, MediumFont, TFT_WHITE);
-        DrawString(" - ", MediumFont, TFT_WHITE);
-        DrawInt(NpnVce, MediumFont, TFT_WHITE);
-      DrawBox(Col4, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col4, TextTop + (RowHeight * (ParNo - 1)));
-        DrawInt(NpnVcc - NpnVce, MediumFont, TFT_WHITE);
-        DrawString(" ", MediumFont, TFT_WHITE);
-      DrawBox(Col5, BoxTop + (RowHeight * (ParNo - 1)), ValWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col5, TextTop + (RowHeight * (ParNo - 1)));
-        DrawDecimal((NpnVcc - NpnVce) * 12 / 10, MediumFont, TFT_WHITE);
-        DrawString(" mA", MediumFont, TFT_WHITE);
+      RowNo = 2;
+      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth * 6, RowHeight, TFT_BLACK); // Clear old value for row
+      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, strcat(dtostrf(NpnVcc, 1, 0, str), " - "), MediumFont, TFT_WHITE); DrawString(dtostrf(NpnVce, 1, 0, str), MediumFont, TFT_WHITE);    
+      DrawStringAt(Col4, FirstRow + RowHeight * RowNo, dtostrf(NpnVcc - NpnVce, 1, 0, str), MediumFont, TFT_WHITE);    
+      DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf((NpnVcc - NpnVce) * 0.117, 5, 1, str), " mA"), MediumFont, TFT_WHITE);
 
-      ParNo = 4; // Parameter number
-      DrawBox(Col2, BoxTop + (RowHeight * (ParNo - 1)), ValWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col2, TextTop + (RowHeight * (ParNo - 1)));
-        DrawInt(PnpVce, MediumFont, TFT_WHITE);
-        DrawString(" - ", MediumFont, TFT_WHITE);
-        DrawInt(PnpVcc, MediumFont, TFT_WHITE);
-      DrawBox(Col4, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col4, TextTop + (RowHeight * (ParNo - 1)));
-        DrawInt(PnpVce - PnpVcc, MediumFont, TFT_WHITE);
-        DrawString(" ", MediumFont, TFT_WHITE);
-      DrawBox(Col5, BoxTop + (RowHeight * (ParNo - 1)), ValWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col5, TextTop + (RowHeight * (ParNo - 1)));
-        DrawDecimal((PnpVce - PnpVcc) * 12 / 10, MediumFont, TFT_WHITE);
-        DrawString(" mA", MediumFont, TFT_WHITE);
+      RowNo = 3;
+      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth * 6, RowHeight, TFT_BLACK); // Clear old value for row
+      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, strcat(dtostrf(PnpVce, 1, 0, str), " - "), MediumFont, TFT_WHITE); DrawString(dtostrf(PnpVcc, 1, 0, str), MediumFont, TFT_WHITE);    
+      DrawStringAt(Col4, FirstRow + RowHeight * RowNo, dtostrf(PnpVce - PnpVcc, 1, 0, str), MediumFont, TFT_WHITE);    
+      DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf((PnpVce - PnpVcc) * 0.117, 5, 1, str), " mA"), MediumFont, TFT_WHITE);
 
-      ParNo = 5; // Parameter number
-      DrawBox(Col2, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col2, TextTop + (RowHeight * (ParNo - 1)));
-        int NpnHfe = float((NpnVcc - NpnVce) * 117.0) / ((DacBase - BaseNpnFactor) * 166.0 / 100.0);
-        if (NpnHfe > 1) {
-          DrawInt(NpnHfe, MediumFont, TFT_WHITE);
-        }
+      RowNo = 4;
+      int NpnHfe = float((NpnVcc - NpnVce) * 117.0) / ((DacBase - BaseNpnFactor) * 166.0 / 100.0);
+      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+      if (NpnHfe > 1) {
+        DrawStringAt(Col2, FirstRow + RowHeight * RowNo, dtostrf(NpnHfe, 1, 0, str), MediumFont, TFT_WHITE);
+      }
+      int PnpHfe = float((PnpVce - PnpVcc) * 117.0) / ((BasePnpFactor - DacBase) * 166.0 / 100.0);
+      DrawBox(Col4, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+      if (PnpHfe > 1) {
+        DrawStringAt(Col4, FirstRow + RowHeight * RowNo, dtostrf(PnpHfe, 1, 0, str), MediumFont, TFT_WHITE);
+      }
 
-      DrawBox(Col4, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col4, TextTop + (RowHeight * (ParNo - 1)));
-        int PnpHfe = float((PnpVce - PnpVcc) * 117.0) / ((BasePnpFactor - DacBase) * 166.0 / 100.0);
-        if (PnpHfe > 1) {
-          DrawInt(PnpHfe, MediumFont, TFT_WHITE);
-        }
+      RowNo = 6;
+      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, dtostrf(GetAdcSmooth(pin_Adc_Bat), 1, 0, str), MediumFont, TFT_WHITE);
 
-      ParNo = 7; // Parameter number
-      DrawBox(Col2, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col2, TextTop + (RowHeight * (ParNo - 1))); DrawInt(GetAdcSmooth(pin_Adc_Bat), MediumFont, TFT_WHITE);
-
-      ParNo = 8; // Parameter number
-      DrawBox(Col2, BoxTop + (RowHeight * (ParNo - 1)), ValWidth, RowHeight, TFT_BLACK); // Clear old value
-      ILI9341SetCursor(Col2, TextTop + (RowHeight * (ParNo - 1))); DrawInt(GetAdcSmooth(pin_Adc_12V), MediumFont, TFT_WHITE);
+      RowNo = 7;
+      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
+      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, dtostrf(GetAdcSmooth(pin_Adc_12V), 1, 0, str), MediumFont, TFT_WHITE);
 
       time = millis();
     }
