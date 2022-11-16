@@ -11,6 +11,7 @@ bool ExecSerialTx = false;  // Send scans to PC
 bool SendAdcValues = false; // Send ADC values to PC
 
 int prev_x = 0, prev_y = 0; // Graph line position
+char str[12]; // For converting and concaternating
 
 const int TFT_WID = 320;  // Display resolution
 const int TFT_HGT = 240;
@@ -197,21 +198,6 @@ long readSupply() {
   result |= ADCH << 8;
   result = 1125300L / result; // Back-calculate AVcc in mV
   return result;
-}
-
-//-------------------------------------------------------------------------
-// DrawDecimal
-//   draw i/10 with one d.p.
-//-------------------------------------------------------------------------
-
-void DrawDecimal(int i, const byte* Font, int color) {
-  if (i < 0) {
-    DrawString("-", Font, color);
-    i = -i;
-  }
-  DrawInt(i / 10, Font, color);
-  DrawString(".", Font, color);
-  DrawInt(i % 10, Font, color);
 }
 
 //-------------------------------------------------------------------------
@@ -430,7 +416,7 @@ void Graph(bool NewCurve, TkindDUT kind, int Vcc, int Vce, int base) {
 //-------------------------------------------------------------------------
 // GetNpnGain
 //   calc NPN gain, hFE
-//   Base current in 1,66 uA steps: (12V - 0,6V) / 27000 / 255 = 1,66 uA
+//   Base current in 1,66 uA steps: (12V - 0,6V) / 27000 / 255 = 1.66 uA
 //   Collector current in 117 uA steps: 12V / 1023 ADC-steps / 100R = 117 uA
 //-------------------------------------------------------------------------
 
@@ -504,7 +490,7 @@ int GetPnpGain() {
 
 //-------------------------------------------------------------------------
 // GetNMosfetThreshold
-//   calc threshold V of MOSFET ; result in 100s of mV
+//   calc threshold V of MOSFET ; result in mV
 //   Vth = DacBase * (R4 + R5) / R5 * 10 / MaxDacBase
 //   Vth = DacBase * (68 + 33) * 10 / 33 / 255
 //   Vth = DacBase * 117 / 255
@@ -518,7 +504,7 @@ int GetNMosfetThreshold() {
     SetDacBase(gate, 1); // gate is approx in 50s of mV
     if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 10) { // Voltage drop over load resistor R3 (100R) in 11.7 mV steps
       TurnOffLoad(tkNMOSFET);
-      return float((gate * 117.0) / MaxDacBase); // Result in 100s of mV
+      return float((gate * 11700.0) / MaxDacBase);
    }
   }
   return 0;
@@ -526,7 +512,7 @@ int GetNMosfetThreshold() {
 
 //-------------------------------------------------------------------------
 // GetPMosfetThreshold
-//   calc threshold V of MOSFET ; result in 100s of mV
+//   calc threshold V of MOSFET ; result in mV
 //   Vth = DacBase * (R4 + R5) / R5 * 10 / MaxDacBase
 //   Vth = DacBase * (68 + 33) * 10 / 33 / 255
 //   Vth = DacBase * 117 / 255
@@ -540,7 +526,7 @@ int GetNMosfetThreshold() {
     SetDacBase((GatePMosFactor) - gate, 1);  // gate is approx in 50s of mV
     if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 10) { // Voltage drop over load resistor R3 (100R) in 11.7 mV steps
       TurnOffLoad(tkPMOSFET);
-      return float((gate * 117.0) / MaxDacBase); // Result in 100s of mV
+      return float((gate * 11700.0) / MaxDacBase);
     }
   }
   return 0;
@@ -548,7 +534,7 @@ int GetNMosfetThreshold() {
 
 //-------------------------------------------------------------------------
 // GetNDiodeForwardVoltage
-//   calc forward voltage of Diode ; result in 100s of mV
+//   calc forward voltage of Diode ; result in mV
 //
 //   Formula for Vf in 100s of mV:
 //     Vf = ADC * 10 * (R2 + R1)*AdcVref / ADC_MAX / R1
@@ -561,10 +547,10 @@ int GetNDiodeForwardVoltage() {
   SetDacVcc(MinDacVcc, 20);
   for (Vf = MinDacVcc; Vf <= MaxDacVcc; Vf++) {
     SetDacVcc(Vf, 1);
-    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 9) { // Voltage drop over load resistor R3 in 11.7 mV steps
+    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 10) { // Voltage drop over load resistor R3 in 11.7 mV steps
       int AdcVcc = GetAdcSmooth(pin_ADC_NPN_Vcc);
       TurnOffLoad(tkNDiode);
-      return float(AdcVcc * 11.7 / 100.0);
+      return float((AdcVcc - 10) * 11.7);
     }
   }
   return 0;
@@ -572,7 +558,7 @@ int GetNDiodeForwardVoltage() {
 
 //-------------------------------------------------------------------------
 // GetPDiodeForwardVoltage
-//   calc forward voltage of Diode ; result in 100s of mV
+//   calc forward voltage of Diode ; result in mV
 //   Formula for Vf in 100s of mV:
 //     Vf = ADC * 10 * (R2 + R1)*AdcVref / ADC_MAX / R1
 //     Vf = ADC * 11.7 / 100
@@ -580,13 +566,14 @@ int GetNDiodeForwardVoltage() {
 
 int GetPDiodeForwardVoltage() {
   int Vf;
+//  int Adc_12V = GetAdcSmooth(pin_Adc_12V);
   SetDacVcc(MaxDacVcc, 20);
   for (Vf = MaxDacVcc; Vf >= MinDacVcc; Vf--) {
     SetDacVcc(Vf, 1);
-    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 9) { // Voltage drop over load resistor R3 in 11.7 mV steps
+    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > 10) { // Voltage drop over load resistor R3 in 11.7 mV steps
       int AdcVce = GetAdcSmooth(pin_ADC_PNP_Vce);
       TurnOffLoad(tkPDiode);
-      return float((AdcMax - AdcVce) * 11.7 / 100.0);
+      return float((AdcMax - AdcVce - 10) * 11.7);
     }
   }
   return 0;
@@ -602,12 +589,14 @@ void EndScan(TkindDUT kind) {
 
   switch (kind) {
     case tkPNP:
+      DrawBox((TFT_WID - 115), 0, 115, 16, TFT_BLACK); // Black background for readability
       DrawStringAt((TFT_WID - 115), 13, "PNP", MediumFont, TFT_GREEN);
       DrawString(" hFE ", MediumFont, TFT_GREEN);
       DrawInt(GetPnpGain(), MediumFont, TFT_GREEN);
       break;
 
     case tkNPN:
+      DrawBox((TFT_WID - 115), 0, 115, 16, TFT_BLACK); // Black background for readability
       DrawStringAt((TFT_WID - 115), 13, "NPN", MediumFont, TFT_GREEN);
       DrawString(" hFE ", MediumFont, TFT_GREEN);
       DrawInt(GetNpnGain(), MediumFont, TFT_GREEN);
@@ -615,27 +604,31 @@ void EndScan(TkindDUT kind) {
       break;
 
     case tkNMOSFET:
+      DrawBox((TFT_WID - 125), 0, 125, 16, TFT_BLACK); // Black background for readability
       DrawStringAt((TFT_WID - 125), 13, "N-Mosfet", MediumFont, TFT_GREEN);
       DrawString(" Vth ", MediumFont, TFT_GREEN);
-      DrawDecimal(GetNMosfetThreshold(), MediumFont, TFT_GREEN);
+      DrawString(dtostrf(GetNMosfetThreshold() / 1000.0, 1, 1, str), MediumFont, TFT_GREEN);
       break;
 
     case tkPMOSFET:
+      DrawBox((TFT_WID - 125), 0, 125, 16, TFT_BLACK); // Black background for readability
       DrawStringAt((TFT_WID - 125), 13, "P-Mosfet", MediumFont, TFT_GREEN);
       DrawString(" Vth ", MediumFont, TFT_GREEN);
-      DrawDecimal(GetPMosfetThreshold(), MediumFont, TFT_GREEN);
+      DrawString(dtostrf(GetPMosfetThreshold() / 1000.0, 1, 1, str), MediumFont, TFT_GREEN);
       break;
 
     case tkNDiode:
+      DrawBox((TFT_WID - 115), 0, 115, 16, TFT_BLACK); // Black background for readability
       DrawStringAt((TFT_WID - 115), 13, "Diode", MediumFont, TFT_GREEN);
       DrawString(" Vf ", MediumFont, TFT_GREEN);
-      DrawDecimal(GetNDiodeForwardVoltage(), MediumFont, TFT_GREEN);
+      DrawString(dtostrf(GetNDiodeForwardVoltage() / 1000.0, 1, 1, str), MediumFont, TFT_GREEN);
       break;
 
     case tkPDiode:
+      DrawBox((TFT_WID - 115), 0, 115, 16, TFT_BLACK); // Black background for readability
       DrawStringAt((TFT_WID - 120), 13, "Diode", MediumFont, TFT_GREEN);
       DrawString(" Vf ", MediumFont, TFT_GREEN);
-      DrawDecimal(GetPDiodeForwardVoltage(), MediumFont, TFT_GREEN);
+      DrawString(dtostrf(GetPDiodeForwardVoltage() / 1000.0, 1, 1, str), MediumFont, TFT_GREEN);
       break;
 
     case tkNothing:
@@ -660,12 +653,14 @@ void DrawGraphLabel(TkindDUT kind, int base, int x, int y) {
   switch (kind) {
     case tkNPN:
     case tkPNP:
-      DrawInt(base * 2, SmallFont, TFT_CYAN); // 2 uA base steps
+      DrawString(dtostrf(base * 1.66, 1, 0, str), SmallFont, TFT_CYAN); // Base current in 1,66 uA steps: (12V - 0,6V) / 27000 / 255 = 1.66 uA
+      //DrawInt(base * 2, SmallFont, TFT_CYAN); // 2 uA base steps
       DrawString("uA", SmallFont, TFT_CYAN);
       break;
     case tkNMOSFET:
     case tkPMOSFET:
-      DrawDecimal(base * 10 / 20, SmallFont, TFT_CYAN); // 50 mV gate steps
+      DrawString(dtostrf(base * 11.7 / MaxDacBase, 1, 1, str), SmallFont, TFT_CYAN); // Gate voltage in 11.7 mV steps: 12V / 1023 ADC-steps = 11.7 mV
+      // DrawDecimal(base * 10 / 20, SmallFont, TFT_CYAN); // 50 mV gate steps
       DrawString("V", SmallFont, TFT_CYAN);
       break;
     case tkPDiode:
@@ -851,7 +846,8 @@ void DrawMenuScreen(void) {
 
   // Draw supply voltage in V
   DrawStringAt(2,  TFT_HGT - 8, "Bat ", MediumFont, TFT_LIGHTGREY);
-  DrawDecimal(GetAdcSmooth(pin_Adc_Bat) * readSupply() * (R6 + R7) / (100L * R7 * 1024), MediumFont, TFT_LIGHTGREY);
+  //DrawDecimal(GetAdcSmooth(pin_Adc_Bat) * readSupply() * (R6 + R7) / (100L * R7 * 1024), MediumFont, TFT_LIGHTGREY);
+  DrawString(dtostrf(GetAdcSmooth(pin_Adc_Bat) * readSupply() * (R6 + R7) / (1000.0 * R7 * 1024.0), 1, 2, str), MediumFont, TFT_LIGHTGREY);
 
   switch (CurDUTclass) { // Draw top of Menu
     case tcMOSFET:
@@ -1024,7 +1020,6 @@ void ExecSetupMenu() {
   const int BoxSize = RowHeight - 1;
   const int ClearWidth = 32;
   int RowNo;  // Parameter position in Setup Menue
-  char str[12]; // For converting and concaternating
 
   DrawStringAt((TFT_WID - 60) / 2, 15, "Setup", LargeFont, TFT_LIGHTGREY); // Header text
 
@@ -1192,7 +1187,6 @@ void ExecToolMenu() {
   const int BoxSize = RowHeight - 1;
   const int ClearWidth = 32;
   int RowNo;
-  char str[12]; // For converting and concaternating
 
   int DacBase = 130;
   int DacVcc = 130;
