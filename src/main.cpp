@@ -11,7 +11,7 @@ bool ExecSerialTx = false;  // Send scans to PC
 bool SendAdcValues = false; // Send ADC values to PC
 
 int prev_x = 0, prev_y = 0; // Graph line position
-char str[12]; // For converting and concaternating
+char str[16]; // For converting and concaternating
 
 const int TFT_WID = 320;  // Display resolution
 const int TFT_HGT = 240;
@@ -44,14 +44,25 @@ const int GatePMosFactor = 242; // DAC start gate value for PMosfet
 const int BaseNpnFactor = 12;   // DAC base value when NPN transistor starts to coduct
 const int BasePnpFactor = 232;  // DAC base value when PNP transistor starts to coduct
 
-// Default value for parameters possible to edit in Setup menue on Curve Tracer Display.
+// Formatting parameters for menus
+const int MenuCol1 = 10;
+const int MenuCol2 = 140;
+const int MenuCol3 = 180;
+const int MenuCol4 = 215;
+const int MenuCol5 = 255;
+const int MenuRow1 = 45;
+const int MenuRowHeight = 25;
+const int MenuBox1 = MenuRow1 - 17;
+const int MenuBoxSize = MenuRowHeight - 1;
+const int MenuEraseWidth = 32;
+
+// Default value for parameters possible to edit in Setup Menu on Curve Tracer Display.
 int NoOfCurves = 8;  // No of curves between Min and Max
-int mAmax = 50;      // Ic for top of graph view on display in mA    (10 - 100)
-int MinIbase = 0;    // Default min base current for NPN/PNP in uA   ( 0 - 410)
-int MaxIbase = 200;  // Default max base current for NPN/PNP in uA   (10 - 420)
-int MinVgate =  0;   // Default min gate voltage for FETs in 100s mV ( 0 - 119)
-int MaxVgate = 30;   // Default max gate voltage for FETs in 100s mV (10 - 120)
-int StepIbase = 10;  // Base current steps for NPN/PNP in uA
+int mAmax = 50;      // Ic for top of graph view on display in mA
+int MinIbase = 0;    // Default min base current for NPN/PNP in uA
+int MaxIbase = 200;  // Default max base current for NPN/PNP in uA
+int MinVgate =  0;   // Default min gate voltage for FETs in 100s mV
+int MaxVgate = 30;   // Default max gate voltage for FETs in 100s mV
 
 // be careful using these inside if statements:
 #define SerialPrint(s) {if (ExecSerialTx) Serial.print(s);}
@@ -60,7 +71,7 @@ int StepIbase = 10;  // Base current steps for NPN/PNP in uA
 enum TkindDUT {tkNothing, tkPNP, tkNPN, tkPMOSFET, tkNMOSFET, tkPDiode, tkNDiode}; // DUT kind, automatically selected
 TkindDUT curKind = tkNothing;
 
-enum TclassDUT {tcBipolar, tcMOSFET, tcDiode}; // DUT class, selected from display Main menue
+enum TclassDUT {tcBipolar, tcMOSFET, tcDiode}; // DUT class, selected from display Main Menu
 TclassDUT CurDUTclass = tcBipolar;
 
 const uint8_t bmpPNP[] PROGMEM = {
@@ -368,7 +379,7 @@ void InitGraph(TkindDUT kind) {
 //     Collector current in 117 uA steps: 12V / 1023 ADC-steps / 100R = 117
 //-------------------------------------------------------------------------
 
-void Graph(bool NewCurve, TkindDUT kind, int Vcc, int Vce, int base) {
+void Graph(bool NewCurve, TkindDUT kind, int Vcc, int Vce) {
   long i; // Display x-coordinate, Voltage in 11,7 mV steps
   long j; // Display y-coordinate, Current through load (R3) in 117 uA steps
   static int px, py; // Variable to smooth the curve
@@ -392,7 +403,7 @@ void Graph(bool NewCurve, TkindDUT kind, int Vcc, int Vce, int base) {
   }
 
   i = TFT_WID * i / (AdcMax); // Adjust i to TFT_WID
-  j = j * (R2 + R1) * 48000 / R3 / R1 / (AdcMax); // convert j to 100s of uA through load resistor R3 (Anders: Why 1,137 ???)
+  j = j * (R2 + R1) * 48000 / R3 / R1 / (AdcMax); // convert j to 100s of uA through load resistor R3
   j = TFT_HGT - 1 - TFT_HGT * j / (mAmax * 10); // Adjust j to TFT_HGT
 
   if (j > TFT_HGT - 1) j = TFT_HGT - 1;
@@ -654,13 +665,11 @@ void DrawGraphLabel(TkindDUT kind, int base, int x, int y) {
     case tkNPN:
     case tkPNP:
       DrawString(dtostrf(base * 1.66, 1, 0, str), SmallFont, TFT_CYAN); // Base current in 1,66 uA steps: (12V - 0,6V) / 27000 / 255 = 1.66 uA
-      //DrawInt(base * 2, SmallFont, TFT_CYAN); // 2 uA base steps
       DrawString("uA", SmallFont, TFT_CYAN);
       break;
     case tkNMOSFET:
     case tkPMOSFET:
       DrawString(dtostrf(base * 11.7 / MaxDacBase, 1, 1, str), SmallFont, TFT_CYAN); // Gate voltage in 11.7 mV steps: 12V / 1023 ADC-steps = 11.7 mV
-      // DrawDecimal(base * 10 / 20, SmallFont, TFT_CYAN); // 50 mV gate steps
       DrawString("V", SmallFont, TFT_CYAN);
       break;
     case tkPDiode:
@@ -674,6 +683,7 @@ void DrawGraphLabel(TkindDUT kind, int base, int x, int y) {
 // Scan
 //   draw curves for a component in the DUT socket
 //   i = iConst + base * iInc / 10
+//   Base current in 1,66 uA steps: (12V - 0,6V) / 27000 / 255 = 1,66 uA
 //-------------------------------------------------------------------------
 
 void Scan(TkindDUT kind, int iConst, int iInc, int minBase, int maxBase, int incBase) {
@@ -682,7 +692,7 @@ void Scan(TkindDUT kind, int iConst, int iInc, int minBase, int maxBase, int inc
 
   for (base = minBase; base <= maxBase; base += incBase) {
     i = iConst + base * iInc / 10;
-    if (i < MinDacBase || i > MaxDacBase) break;
+//    if (i < MinDacBase || i > MaxDacBase) break; // Anders???
     SetDacBase(i, 0);
 
     switch (kind) {
@@ -694,7 +704,7 @@ void Scan(TkindDUT kind, int iConst, int iInc, int minBase, int maxBase, int inc
           if (DacVcc < 5) {
             delay(50); // Delay first round so DAC is seattled
           }
-          Graph(DacVcc == MinDacVcc, kind, GetAdcSmooth(pin_ADC_NPN_Vcc), GetAdcSmooth(pin_ADC_NPN_Vce), base);
+          Graph(DacVcc == MinDacVcc, kind, GetAdcSmooth(pin_ADC_NPN_Vcc), GetAdcSmooth(pin_ADC_NPN_Vce));
           if (prev_y < 0)
             DacVcc = MaxDacVcc + 1;
         };
@@ -708,7 +718,7 @@ void Scan(TkindDUT kind, int iConst, int iInc, int minBase, int maxBase, int inc
           if (DacVcc > MaxDacVcc - 5) {
             delay(50); // Delay first round so output from DAC is seattled
           }
-          Graph(DacVcc == MaxDacVcc, kind, GetAdcSmooth(pin_ADC_PNP_Vcc), GetAdcSmooth(pin_ADC_PNP_Vce), base);
+          Graph(DacVcc == MaxDacVcc, kind, GetAdcSmooth(pin_ADC_PNP_Vcc), GetAdcSmooth(pin_ADC_PNP_Vce));
           if (prev_y < 0)
             DacVcc = -1;
         };
@@ -729,6 +739,7 @@ void Scan(TkindDUT kind, int iConst, int iInc, int minBase, int maxBase, int inc
 //-------------------------------------------------------------------------
 // ScanKind
 //   draw curves for a component kind
+//   Base current in 1,66 uA steps: (12V - 0,6V) / 27000 / 255 = 1,66 uA
 //-------------------------------------------------------------------------
 
 void ScanKind(TkindDUT kind) {
@@ -738,8 +749,8 @@ void ScanKind(TkindDUT kind) {
   switch (kind) {
     case tkPNP:
     case tkNPN:
-      minBase = MinIbase * 10 / 20; // 2 uA base steps
-      maxBase = MaxIbase * 10 / 20;
+      minBase = float(MinIbase / 1.66); // ???
+      maxBase = float(MaxIbase / 1.66);
       break;
 
     case tkPMOSFET:
@@ -754,7 +765,7 @@ void ScanKind(TkindDUT kind) {
       break;
   }
 
-  incBase = (maxBase - minBase) / NoOfCurves;
+  incBase = (maxBase - minBase) / (NoOfCurves - 1);
   incBase = incBase < 1 ? 1 : incBase; // incBase must be at least 1
 
   switch (kind) {
@@ -770,7 +781,7 @@ void ScanKind(TkindDUT kind) {
 
 //-------------------------------------------------------------------------
 // DrawCheckBox
-//   draw a CheckBox on the main menu screen
+//   draw a CheckBox on the Main Menu
 //-------------------------------------------------------------------------
 
 void DrawCheckBox(int Left, const char *str, bool checked, const uint8_t *bitmap1, const uint8_t *bitmap2) {
@@ -778,14 +789,14 @@ void DrawCheckBox(int Left, const char *str, bool checked, const uint8_t *bitmap
   const int Width = 92;
   const int BoxWidth = 33;
   const int BoxHeight = 33;
-  const int Col2 = (Width - BoxWidth) / 2;
+  const int MenuCol2 = (Width - BoxWidth) / 2;
   const int BoxTop = 52;
   pen_width = 1;
 
-  DrawFrame(Left + Col2, Top + BoxTop, BoxWidth, BoxHeight, TFT_GREEN);
+  DrawFrame(Left + MenuCol2, Top + BoxTop, BoxWidth, BoxHeight, TFT_GREEN);
   if (checked) {
-    DrawLine(Left + Col2, Top + BoxTop, Left + Col2 + BoxWidth - 1, Top + BoxTop + BoxHeight - 1, TFT_GREEN);
-    DrawLine(Left + Col2, Top + BoxTop + BoxHeight - 1, Left + Col2 + BoxWidth - 1, Top + BoxTop, TFT_GREEN);
+    DrawLine(Left + MenuCol2, Top + BoxTop, Left + MenuCol2 + BoxWidth - 1, Top + BoxTop + BoxHeight - 1, TFT_GREEN);
+    DrawLine(Left + MenuCol2, Top + BoxTop + BoxHeight - 1, Left + MenuCol2 + BoxWidth - 1, Top + BoxTop, TFT_GREEN);
   }
 
   execDrawChar = false;
@@ -802,7 +813,6 @@ void DrawCheckBox(int Left, const char *str, bool checked, const uint8_t *bitmap
 void DrawCharColumn(uint16_t x0, uint16_t y0, const char* str, uint16_t color) {
   int y;
   const char* c;
-
   y = y0;
   c = str;
   while (*c) {
@@ -833,11 +843,23 @@ void DrawZIF(const char* str1, const char* str2) {
 }
 
 //-------------------------------------------------------------------------
-// DrawMenuScreen
+// DrawButton
+//   draw standard button on x, y coordinate
+//-------------------------------------------------------------------------
+
+void DrawButton(int x, int y, const char *Txt) {
+  const int ButtonWidth = 50;
+  const int ButtonHeight = 25;
+  DrawFrame(x, y, ButtonWidth, ButtonHeight, TFT_GREEN);
+  DrawStringAt(x + 8, y + 18, Txt, MediumFont, TFT_GREEN);
+}
+
+//-------------------------------------------------------------------------
+// DrawMainMenu
 //   draw the main menu screen
 //-------------------------------------------------------------------------
 
-void DrawMenuScreen(void) {
+void DrawMainMenu(void) {
   ClearDisplay(TFT_BLACK);
 
   const int BipolarLeft = 10;
@@ -878,22 +900,8 @@ void DrawMenuScreen(void) {
   DrawCheckBox(MOSFETLeft,  "MOSFET", CurDUTclass == tcMOSFET,  bmpPMOSFET, bmpNMOSFET);
   DrawCheckBox(DiodeLeft,   "Diode",  CurDUTclass == tcDiode,   bmpNDiodeBig, bmpPDiodeBig);
 
-  // Tools button
-  const int ToolsWidth = 50;
-  const int ToolsHeight = 25;
-  const int ToolsLeft = TFT_WID - ToolsWidth - 84;
-  const int ToolsTop = TFT_HGT - ToolsHeight - 2;
-  DrawFrame(ToolsLeft, ToolsTop, ToolsWidth, ToolsHeight, TFT_GREEN);
-  DrawStringAt(ToolsLeft + 8, ToolsTop + 18, "Tools", MediumFont, TFT_GREEN);
-
-  // Setup button
-  const int SetupWidth = 50;
-  const int SetupHeight = 25;
-  const int SetupLeft = TFT_WID - SetupWidth - 4;
-  const int SetupTop = TFT_HGT - SetupHeight - 2;
-  DrawFrame(SetupLeft, SetupTop, SetupWidth, SetupHeight, TFT_GREEN);
-  DrawStringAt(SetupLeft + 8, SetupTop + 18, "Setup", MediumFont, TFT_GREEN);
-
+  DrawButton(TFT_WID - 134, TFT_HGT - 27, "Tools");
+  DrawButton(TFT_WID - 54, TFT_HGT - 27, "Setup");
 }
 
 //-------------------------------------------------------------------------
@@ -993,7 +1001,7 @@ void ExecSerialCmd(void) {
     case 'M': // Show main menu and start automatic DUT scanning
       curKind = tkNothing;
       ExecSerialTx = false;
-      DrawMenuScreen();
+      DrawMainMenu();
       break;
 
     default:
@@ -1002,169 +1010,162 @@ void ExecSerialCmd(void) {
 }
 
 //-------------------------------------------------------------------------
+// DrawMenuItem
+//   draw menu item with possibility to erase old value
+//-------------------------------------------------------------------------
+
+void DrawMenuItem(int RowNo, int ColNo, const char* Txt, int EraseMultiple) {
+  int Col; // Column position value
+  switch (ColNo) {
+    case 1: Col = MenuCol1; break;
+    case 2: Col = MenuCol2; break;
+    case 3: Col = MenuCol3; break;
+    case 4: Col = MenuCol4; break;
+    case 5: Col = MenuCol5; break;
+  }
+  if (EraseMultiple > 0) DrawBox(Col, MenuBox1 + MenuRowHeight * RowNo, MenuEraseWidth * EraseMultiple, MenuRowHeight, TFT_BLACK);
+  DrawStringAt(Col, MenuRow1 + MenuRowHeight * RowNo, Txt, MediumFont, TFT_WHITE);
+}
+
+//-------------------------------------------------------------------------
+// DrawIncDecButton
+//   draw Increase & Decrease buttons on a row
+//-------------------------------------------------------------------------
+
+void DrawIncDecButton(int RowNo) {
+  DrawFrame(MenuCol2, MenuBox1 + MenuRowHeight * RowNo, MenuBoxSize, MenuBoxSize, TFT_GREEN);
+  DrawStringAt(MenuCol2 + 9, MenuRow1 - 2 + MenuRowHeight * RowNo, "-", LargeFont, TFT_WHITE);
+  DrawFrame(MenuCol4, MenuBox1 + MenuRowHeight * RowNo, MenuBoxSize, MenuBoxSize, TFT_GREEN);
+  DrawStringAt(MenuCol4 + 8, MenuRow1 + MenuRowHeight * RowNo, "+", LargeFont, TFT_WHITE);
+}
+
+//-------------------------------------------------------------------------
+// TouchIncDec
+//   return increase / decrease based on touch coordinates
+//-------------------------------------------------------------------------
+
+int TouchIncDec(int RowNo, int x, int y) {
+//  if (x == 0 && y == 0) return 0; // Quick exit
+  int Row;
+  for (Row = 0; Row <= 7; Row++) {
+    if ((y > MenuBox1 + MenuRowHeight * RowNo && y < MenuBox1 + MenuRowHeight * (RowNo + 1))) {
+      if (x > MenuCol3) {
+        return 1; // Increase
+      } else if (x > MenuCol2 && x < MenuCol3) {
+        return -1; // Decrease
+      }
+    }
+  } 
+  return 0;
+}
+
+//-------------------------------------------------------------------------
+// FastIncDec
+//   accelerate increase / decrease after some time and no of rounds
+//-------------------------------------------------------------------------
+
+int FastIncDec(int IncDec) {
+  static unsigned long FastTimer = 0;
+  static int FastCount = 0;
+  int NewIncDec;
+  if (millis() - FastTimer < 300) {
+    if (FastCount >  9) NewIncDec = IncDec * 10; // Faster inc/dec
+    if (FastCount > 15) NewIncDec = IncDec * 50; // Fastest inc/dec
+    FastCount ++;
+  } else {
+    NewIncDec = IncDec; // Orig. inc/dec
+    FastCount = 0;
+  }
+  FastTimer = millis();
+  return NewIncDec;
+}
+
+//-------------------------------------------------------------------------
 // ExecSetupMenu
 //   draw and executes the setup menu screen
 //-------------------------------------------------------------------------
 
 void ExecSetupMenu() {
-  ClearDisplay(TFT_BLACK);
-
-  const int Col1 = 10;
-  const int Col2 = 140;
-  const int Col3 = 180;
-  const int Col4 = 215;    
-  const int Col5 = 255;
-  const int FirstRow = 45;
-  const int RowHeight = 25;
-  const int FirstBox = FirstRow - 17;
-  const int BoxSize = RowHeight - 1;
-  const int ClearWidth = 32;
-  int RowNo;  // Parameter position in Setup Menue
-
-  DrawStringAt((TFT_WID - 60) / 2, 15, "Setup", LargeFont, TFT_LIGHTGREY); // Header text
-
-  RowNo = 0;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "No of curves", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(NoOfCurves, 1, 0, str), MediumFont, TFT_YELLOW);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 1;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Max load current", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(mAmax, 1, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "mA", MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 2;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Min base current", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinIbase, 1, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "uA", MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 3;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Max base current", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxIbase, 1, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "uA", MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 4;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Min gate voltage", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinVgate, 1, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "V", MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 5;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "Max gate voltage", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxVgate, 1, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + (RowHeight * RowNo), "V", MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  // Exit button
-  const int ExitWidth = 50;
-  const int ExitHeight = 25;
-  const int ExitLeft = (TFT_WID - ExitWidth - 4);
-  const int ExitTop = TFT_HGT - ExitHeight - 2;
-  DrawFrame(ExitLeft, ExitTop, ExitWidth, ExitHeight, TFT_GREEN);
-  DrawStringAt(ExitLeft + 10, ExitTop + 18, "Exit", MediumFont, TFT_GREEN);
-
-  
-  int x, y; // Display touch coordinates
   bool ExitButton = false;
+  bool FirstRun = true;
+  int IncDec; // Increase / Decrease value for parameters
+ 
+  ClearDisplay(TFT_BLACK);
+  DrawStringAt((TFT_WID - 60) / 2, 15, "Setup", LargeFont, TFT_LIGHTGREY); // Header text
+  DrawMenuItem(0, 1, "No of curves", 0);
+  DrawIncDecButton(0);
+  DrawMenuItem(1, 1, "Max load current", 0);
+  DrawIncDecButton(1);
+  DrawMenuItem(2, 1, "Min base current", 0);
+  DrawIncDecButton(2);
+  DrawMenuItem(3, 1, "Max base current", 0);
+  DrawIncDecButton(3);
+  DrawMenuItem(4, 1, "Min gate voltage", 0);
+  DrawIncDecButton(4);
+  DrawMenuItem(5, 1, "Max gate voltage", 0);
+  DrawIncDecButton(5);
 
+  DrawButton(TFT_WID - 54, TFT_HGT - 27, "Exit");
   while (!ExitButton) {
-    if (GetTouch(&x, &y)) {
+    int x = 0, y = 0; // Touch coordinates
 
-      if (y > TFT_HGT - ExitHeight && x > TFT_WID - ExitWidth) {// Exit button
+    if (FirstRun || GetTouch(&x, &y)) {
+      if (y > TFT_HGT - 54 && x > TFT_WID - 27) {// Exit button
         ExitButton = true;
       }
 
 // Increment / decrement parameter values
-
-      RowNo = 0;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if (NoOfCurves < 15) NoOfCurves += 1;
-        } else if (x < Col3) {
-          if (NoOfCurves > 2) NoOfCurves -= 1;
-        }
-        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(NoOfCurves, 1, 0, str), MediumFont, TFT_YELLOW);
+      IncDec = TouchIncDec(0, x, y);
+      if (FirstRun || IncDec != 0) {
+        NoOfCurves += IncDec;
+        if (NoOfCurves < 2) NoOfCurves = 2;
+        if (NoOfCurves > 15) NoOfCurves = 15;
+        DrawMenuItem(0, 3, dtostrf(NoOfCurves, 1, 0, str), 1);
+      }
+      
+      IncDec = TouchIncDec(1, x, y);
+      if (FirstRun || IncDec != 0) {
+        mAmax += IncDec * 10;
+        if (mAmax < 10) mAmax = 10;
+        if (mAmax > 100) mAmax = 110; // Load resistor of 100R limits load current to 110 mA
+        DrawMenuItem(1, 3, dtostrf(mAmax, 1, 0, str), 1);
       }
 
-      RowNo = 1;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if (mAmax < 100) mAmax += 10;
-        } else if (x < Col3) {
-          if (mAmax > 10) mAmax -= 10;
-        }
-        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(mAmax, 1, 0, str), MediumFont, TFT_YELLOW);
+      IncDec = TouchIncDec(2, x, y);
+      if (FirstRun || IncDec != 0) {
+        MinIbase += FastIncDec(IncDec);
+        if (MinIbase < 0) MinIbase = 0;
+        if (MinIbase > MaxIbase) MinIbase = MaxIbase;
+        DrawMenuItem(2, 3, dtostrf(MinIbase, 1, 0, str), 1);
       }
 
-      RowNo = 2;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if (MinIbase < MaxIbase - StepIbase) MinIbase += StepIbase;
-        } else if (x < Col3) {
-          if (MinIbase > 0) MinIbase -= StepIbase;
-        }
-        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinIbase, 1, 0, str), MediumFont, TFT_YELLOW);
+      IncDec = TouchIncDec(3, x, y);
+      if (FirstRun || IncDec != 0) {
+        MaxIbase += FastIncDec(IncDec);
+        if (MaxIbase < MinIbase) MaxIbase = MinIbase;
+        if (MaxIbase > 400) MaxIbase = 400; // Base resistor of 27K limits base current to about 400 uA
+        DrawMenuItem(3, 3, dtostrf(MaxIbase, 1, 0, str), 1);
       }
 
-      RowNo = 3;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if (MaxIbase < 420) MaxIbase += StepIbase; // Base resistor of 27 K limits base current to 420 uA
-        } else if (x < Col3) {
-          if (MaxIbase > MinIbase + StepIbase) MaxIbase -= StepIbase;
-        }
-        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxIbase, 1, 0, str), MediumFont, TFT_YELLOW);
+      IncDec = TouchIncDec(4, x, y);
+      if (FirstRun || IncDec != 0) {
+        MinVgate += FastIncDec(IncDec);
+        if (MinVgate < 0) MinVgate = 0;
+        if (MinVgate > MaxVgate) MinVgate = MaxVgate;
+        DrawMenuItem(4, 3, dtostrf(MinVgate / 10.0, 1, 1, str), 1);
       }
 
-      RowNo = 4;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if (MinVgate < MaxVgate - 1) MinVgate += 1;
-        } else if (x < Col3) {
-          if (MinVgate > 0) MinVgate -= 1;
-        }
-        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MinVgate, 1, 0, str), MediumFont, TFT_YELLOW);
-      }
-
-      RowNo = 5;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if (MaxVgate < 120) MaxVgate += 1;
-        } else if (x < Col3) {
-          if (MaxVgate > MinVgate + 1) MaxVgate -= 1;
-        }
-        DrawBox(Col3, FirstBox + RowHeight * RowNo, ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(MaxVgate, 1, 0, str), MediumFont, TFT_YELLOW);
+      IncDec = TouchIncDec(5, x, y);
+      if (FirstRun || IncDec != 0) {
+        MaxVgate += FastIncDec(IncDec);
+        if (MaxVgate < MinVgate) MaxVgate = MinVgate;
+        if (MaxVgate > 120) MaxVgate = 120;
+        DrawMenuItem(5, 3, dtostrf(MaxVgate / 10.0, 1, 1, str), 1);
       }
 
       delay(100); // Delay for increase / decrease of parameter values
     }
+    FirstRun = false;
   }
 }
 
@@ -1174,120 +1175,56 @@ void ExecSetupMenu() {
 //-------------------------------------------------------------------------
 
 void ExecToolMenu() {
-  ClearDisplay(TFT_BLACK);
-
-  const int Col1 = 10;
-  const int Col2 = 140;
-  const int Col3 = 180;
-  const int Col4 = 215;
-  const int Col5 = 255;
-  const int FirstRow = 45;
-  const int RowHeight = 25;
-  const int FirstBox = FirstRow - 17;
-  const int BoxSize = RowHeight - 1;
-  const int ClearWidth = 32;
-  int RowNo;
-
-  int DacBase = 130;
+  bool ExitButton = false;
+  bool FirstRun = true;
+  static unsigned long UpdTme = 0; // Update timer for read only parameters
+  int IncDec; // Increase / Decrease value for parameters
+  int DacBase = 130; // Initial values for DAC's
   int DacVcc = 130;
 
+  ClearDisplay(TFT_BLACK);
   DrawStringAt((TFT_WID - 40) / 2, 15, "Tools", LargeFont, TFT_LIGHTGREY); // Header text
+  DrawMenuItem(0, 1, "DAC Vcc (load)", 0);
+  DrawIncDecButton(0);
+  DrawMenuItem(1, 1, "DAC Base/Gate", 0);
+  DrawIncDecButton(1);
+  DrawMenuItem(2, 1, "ADC NPN side", 0);
+  DrawMenuItem(3, 1, "ADC PNP side", 0);
+  DrawMenuItem(4, 1, "BJT Gain (hFE)", 0);
+  DrawMenuItem(6, 1, "ADC Supply V", 0);
+  DrawMenuItem(7, 1, "ADC 12 V", 0);
 
-  RowNo = 0;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "DAC Vcc (load)", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacVcc, 3, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacVcc * 11.7 / MaxDacVcc, 5, 1, str), " V"), MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 1;
-  DrawStringAt(Col1, FirstRow + RowHeight * RowNo, "DAC Base/Gate", MediumFont, TFT_WHITE);
-  DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacBase, 3, 0, str), MediumFont, TFT_YELLOW);
-  DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacBase * 11.7 / MaxDacBase, 5, 1, str), " V"), MediumFont, TFT_WHITE);
-  DrawFrame(Col2, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col2 + 9, FirstRow - 2 + RowHeight * RowNo, "-", LargeFont, TFT_WHITE);
-  DrawFrame(Col4, FirstBox + RowHeight * RowNo, BoxSize, BoxSize, TFT_GREEN);
-  DrawStringAt(Col4 + 8, FirstRow + RowHeight * RowNo, "+", LargeFont, TFT_WHITE);
-
-  RowNo = 2;
-  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC NPN side", MediumFont, TFT_WHITE);
-
-  RowNo = 3;
-  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC PNP side", MediumFont, TFT_WHITE);
-
-  RowNo = 4;
-  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "BJT Gain (hFE)", MediumFont, TFT_WHITE);
-
-  RowNo = 5;
-  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "", MediumFont, TFT_WHITE);
-
-  RowNo = 6;
-  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC Supply V", MediumFont, TFT_WHITE);
-
-  RowNo = 7;
-  DrawStringAt(Col1, FirstRow + (RowHeight * RowNo), "ADC 12 V", MediumFont, TFT_WHITE);
-
-  // Exit button
-  const int ExitWidth = 50;
-  const int ExitHeight = 25;
-  const int ExitLeft = (TFT_WID - ExitWidth - 4);
-  const int ExitTop = TFT_HGT - ExitHeight - 2;
-  DrawFrame(ExitLeft, ExitTop, ExitWidth, ExitHeight, TFT_GREEN);
-  DrawStringAt(ExitLeft + 10, ExitTop + 18, "Exit", MediumFont, TFT_GREEN);
-
-  
-  int x, y; // Touch coordinates
-  bool ExitButton = false;
-  static unsigned long time = 0;
-
+  DrawButton(TFT_WID - 54, TFT_HGT - 27, "Exit");
   while (!ExitButton) {
-    if (GetTouch(&x, &y)) {
-      if (y > TFT_HGT - ExitHeight && x > TFT_WID - ExitWidth) {// Exit button
+    int x = 0, y = 0; // Touch coordinates
+
+    if (FirstRun || GetTouch(&x, &y)) {
+      if (y > TFT_HGT - 54 && x > TFT_WID - 27) { // Exit button
         ExitButton = true;
       }
 
-// Increment / decrement parameter values
-
-      RowNo = 0;
-      if (y > FirstBox + RowHeight * RowNo && y < FirstBox + RowHeight * (RowNo + 1)) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if      (DacVcc >= MinDacVcc && DacVcc <=  29) DacVcc +=  1;
-          else if (DacVcc >= 30        && DacVcc <= 210) DacVcc += 10;
-          else if (DacVcc > 210        && DacVcc <  MaxDacVcc) DacVcc += 1;
-        } else if (x < Col3) {
-          if      (DacVcc > MinDacVcc  && DacVcc <=  39) DacVcc -=  1;
-          else if (DacVcc >= 40        && DacVcc <= 220) DacVcc -= 10;
-          else if (DacVcc > 220        && DacVcc <= MaxDacVcc) DacVcc -= 1;
-        }
-        DrawBox(Col3, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacVcc, 3, 0, str), MediumFont, TFT_YELLOW);
-        DrawBox(Col5, FirstBox + (RowHeight * RowNo), ClearWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacVcc * 11.7 / MaxDacVcc, 5, 1, str), " V"), MediumFont, TFT_WHITE);
+// Increase / Decrease parameter values
+      IncDec = TouchIncDec(0, x, y);
+      if (FirstRun || IncDec != 0) {
+        DacVcc += FastIncDec(IncDec);
+        if (DacVcc < MinDacVcc) DacVcc = MinDacVcc;
+        if (DacVcc > MaxDacVcc) DacVcc = MaxDacVcc;
+        DrawMenuItem(0, 3, dtostrf(DacVcc, 3, 0, str), 1);
+        DrawMenuItem(0, 5, strcat(dtostrf(DacVcc * 11.7 / MaxDacVcc, 5, 1, str), " V"), 2);
       }
 
-      RowNo = 1;
-      if (y > FirstBox + (RowHeight * RowNo) && y < FirstBox + (RowHeight * (RowNo + 1))) {
-        if (x > Col3 && x < TFT_WID - ExitWidth) {
-          if      (DacBase >= MinDacVcc && DacBase <=  29) DacBase +=  1;
-          else if (DacBase >= 30        && DacBase <= 210) DacBase += 10;
-          else if (DacBase > 210        && DacBase <  MaxDacVcc) DacBase += 1;
-        } else if (x < Col3) {
-          if      (DacBase > MinDacVcc  && DacBase <=  39) DacBase -=  1;
-          else if (DacBase >= 40        && DacBase <= 220) DacBase -= 10;
-          else if (DacBase > 220        && DacBase <= MaxDacVcc) DacBase -= 1;
-        }
-        DrawBox(Col3, FirstBox + (RowHeight * RowNo), RowHeight, ClearWidth, TFT_BLACK); // Clear old value
-        DrawStringAt(Col3, FirstRow + RowHeight * RowNo, dtostrf(DacBase, 3, 0, str), MediumFont, TFT_YELLOW);
-        DrawBox(Col5, FirstBox + (RowHeight * RowNo), ClearWidth * 2, RowHeight, TFT_BLACK); // Clear old value
-        DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf(DacBase * 11.7 / MaxDacBase, 5, 1, str), " V"), MediumFont, TFT_WHITE);
+      IncDec = TouchIncDec(1, x, y);
+      if (FirstRun || IncDec != 0) {
+        DacBase += FastIncDec(IncDec);
+        if (DacBase < MinDacBase) DacBase = MinDacBase;
+        if (DacBase > MaxDacBase) DacBase = MaxDacBase;
+        DrawMenuItem(1, 3, dtostrf(DacBase, 3, 0, str), 1);
+        DrawMenuItem(1, 5, strcat(dtostrf(DacBase * 11.7 / MaxDacBase, 5, 1, str), " V"), 2);
       }
-
       delay(100); // Delay for increase / decrease of parameter values
 
 // Update read only papameters
-    } else if (millis() - time > 1000) { // !GetTouch
+    } else if (millis() - UpdTme > 1000) { // Update read only parameters if !GetTouch
       SetDacBase(DacBase, 0);
       SetDacVcc(DacVcc, 10);
       int NpnVcc = GetAdcSmooth(pin_ADC_NPN_Vcc);
@@ -1295,81 +1232,31 @@ void ExecToolMenu() {
       int PnpVce = GetAdcSmooth(pin_ADC_PNP_Vce);
       int PnpVcc = GetAdcSmooth(pin_ADC_PNP_Vcc);
 
-      RowNo = 2;
-      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth * 6, RowHeight, TFT_BLACK); // Clear old value for row
-      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, strcat(dtostrf(NpnVcc, 1, 0, str), " - "), MediumFont, TFT_WHITE); DrawString(dtostrf(NpnVce, 1, 0, str), MediumFont, TFT_WHITE);    
-      DrawStringAt(Col4, FirstRow + RowHeight * RowNo, dtostrf(NpnVcc - NpnVce, 1, 0, str), MediumFont, TFT_WHITE);    
-      DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf((NpnVcc - NpnVce) * 0.117, 5, 1, str), " mA"), MediumFont, TFT_WHITE);
+      DrawMenuItem(2, 2, strcat(dtostrf(NpnVcc, 1, 0, str), " - "), 6);
+      DrawMenuItem(2, 3, dtostrf(NpnVce, 1, 0, str), 0);
+      DrawMenuItem(2, 4, dtostrf(NpnVcc - NpnVce, 1, 0, str), 0);
+      DrawMenuItem(2, 5, strcat(dtostrf((NpnVcc - NpnVce) * 0.117, 5, 1, str), " mA"), 0);
 
-      RowNo = 3;
-      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth * 6, RowHeight, TFT_BLACK); // Clear old value for row
-      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, strcat(dtostrf(PnpVce, 1, 0, str), " - "), MediumFont, TFT_WHITE); DrawString(dtostrf(PnpVcc, 1, 0, str), MediumFont, TFT_WHITE);    
-      DrawStringAt(Col4, FirstRow + RowHeight * RowNo, dtostrf(PnpVce - PnpVcc, 1, 0, str), MediumFont, TFT_WHITE);    
-      DrawStringAt(Col5, FirstRow + RowHeight * RowNo, strcat(dtostrf((PnpVce - PnpVcc) * 0.117, 5, 1, str), " mA"), MediumFont, TFT_WHITE);
+      DrawMenuItem(3, 2, strcat(dtostrf(PnpVce, 1, 0, str), " - "), 6);
+      DrawMenuItem(3, 3, dtostrf(PnpVcc, 1, 0, str), 0);
+      DrawMenuItem(3, 4, dtostrf(PnpVce - PnpVcc, 1, 0, str), 0);
+      DrawMenuItem(3, 5, strcat(dtostrf((PnpVce - PnpVcc) * 0.117, 5, 1, str), " mA"), 0);
 
-      RowNo = 4;
+      DrawMenuItem (4, 2, NULL, 4); // Clear old hFE values
       int NpnHfe = float((NpnVcc - NpnVce) * 117.0) / ((DacBase - BaseNpnFactor) * 166.0 / 100.0);
-      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-      if (NpnHfe > 1) {
-        DrawStringAt(Col2, FirstRow + RowHeight * RowNo, dtostrf(NpnHfe, 1, 0, str), MediumFont, TFT_WHITE);
-      }
+      if (NpnHfe > 1) DrawMenuItem (4, 2, dtostrf(NpnHfe, 1, 0, str), 0);
+
       int PnpHfe = float((PnpVce - PnpVcc) * 117.0) / ((BasePnpFactor - DacBase) * 166.0 / 100.0);
-      DrawBox(Col4, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-      if (PnpHfe > 1) {
-        DrawStringAt(Col4, FirstRow + RowHeight * RowNo, dtostrf(PnpHfe, 1, 0, str), MediumFont, TFT_WHITE);
-      }
+      if (PnpHfe > 1) DrawMenuItem (4, 4, dtostrf(PnpHfe, 1, 0, str), 0);
 
-      RowNo = 6;
-      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, dtostrf(GetAdcSmooth(pin_Adc_Bat), 1, 0, str), MediumFont, TFT_WHITE);
+      DrawMenuItem(6, 2, dtostrf(GetAdcSmooth(pin_Adc_Bat), 1, 0, str), 1);
+      DrawMenuItem(7, 2, dtostrf(GetAdcSmooth(pin_Adc_12V), 1, 0, str), 1);
 
-      RowNo = 7;
-      DrawBox(Col2, FirstBox + (RowHeight * RowNo), ClearWidth, RowHeight, TFT_BLACK); // Clear old value
-      DrawStringAt(Col2, FirstRow + RowHeight * RowNo, dtostrf(GetAdcSmooth(pin_Adc_12V), 1, 0, str), MediumFont, TFT_WHITE);
-
-      time = millis();
+      UpdTme = millis();
     }
+    FirstRun = false;
   }
-  TurnOffLoad(tkNothing); // Set DACs to the default
-}
-//-------------------------------------------------------------------------
-// MainMenuTouch
-//   execute a touch command of main menu
-//-------------------------------------------------------------------------
-
-void MainMenuTouch(void) {
-  int x, y; // Display touch coordinates
-
-  if (!GetTouch(&x, &y))
-    return;
-  
-  if (y > TFT_HGT * 2 / 5 && y < TFT_HGT * 4 / 5) {
-    if (x < TFT_WID * 1 / 3 ) {
-      if (CurDUTclass != tcBipolar) {
-        CurDUTclass = tcBipolar;
-      }
-    }
-    else if (x < TFT_WID * 2 / 3) {
-      if (CurDUTclass != tcMOSFET) {
-        CurDUTclass = tcMOSFET;
-      }
-    } else {
-      if (CurDUTclass != tcDiode) {
-        CurDUTclass = tcDiode;
-      }
-    }
-    DrawMenuScreen(); // Show Menu after new DUT class selection (BJT / MOSFET / DIODE)
-  }
-
-  if (y > TFT_HGT * 4 / 5) {
-    if (x > TFT_WID * 4 / 5) {
-      ExecSetupMenu();
-      DrawMenuScreen(); // Show Menu after Setup
-    } else if (x > TFT_WID * 3 / 5) {
-      ExecToolMenu();
-      DrawMenuScreen(); // Show Menu after Tool
-    }
-  }
+  TurnOffLoad(tkNothing); // Set DACs to default values
 }
 
 //-------------------------------------------------------------------------
@@ -1396,7 +1283,7 @@ void setup(void) {
   SPI.beginTransaction(SPISettings (4000000UL, MSBFIRST, SPI_MODE0));  // SPI for DAC
 
   TurnOffLoad(tkNothing); // Set DACs to the default
-  DrawMenuScreen();
+  DrawMainMenu();
 }
 
 //-------------------------------------------------------------------------
@@ -1421,13 +1308,36 @@ void loop(void) {
       curKind = newKind;
     } else if ((curKind != tkNothing) && newKind == tkNothing) { // DUT removed
       curKind = tkNothing;
-      DrawMenuScreen(); // Draw menu if DUT is removed
+      DrawMainMenu(); // Show Main Menu when DUT is removed
     }
 
     time = millis();
   }
 
-  if (curKind == tkNothing) { // Check for touch on display
-    MainMenuTouch();
+  if (curKind == tkNothing) { // Exec Main Menu, check for touch
+    int x, y; // Touch coordinates
+    if (!GetTouch(&x, &y)) return;
+    
+    if (y > TFT_HGT * 2 / 5 && y < TFT_HGT * 4 / 5) { // New selection of DUT class
+      if (x < TFT_WID * 1 / 3 ) {
+        if (CurDUTclass != tcBipolar) CurDUTclass = tcBipolar;
+      }
+      else if (x < TFT_WID * 2 / 3) {
+        if (CurDUTclass != tcMOSFET) CurDUTclass = tcMOSFET;
+      } else {
+        if (CurDUTclass != tcDiode) CurDUTclass = tcDiode;
+      }
+      DrawMainMenu(); // Show Main Menu after new DUT class is selected
+    }
+
+    if (y > TFT_HGT * 4 / 5) {
+      if (x > TFT_WID * 4 / 5) {
+        ExecSetupMenu();
+        DrawMainMenu(); // Show Main Menu after Setup Menu
+      } else if (x > TFT_WID * 3 / 5) {
+        ExecToolMenu();
+        DrawMainMenu(); // Show Main Menu after Tool Menu
+      }
+    }
   }
 }
