@@ -1,6 +1,5 @@
 /*
-Arduino Nano/Pro Curve Tracer
-ver 1.0
+Arduino Nano Curve Tracer
 */
 
 #include <Arduino.h>
@@ -63,6 +62,7 @@ int MinIbase = 0;    // Default min base current for NPN/PNP in uA
 int MaxIbase = 200;  // Default max base current for NPN/PNP in uA
 int MinVgate =  0;   // Default min gate voltage for FETs in 100s mV
 int MaxVgate = 30;   // Default max gate voltage for FETs in 100s mV
+int HfeVccEnd = 10;  // Default current in mA for NPN/PNP hFE calculation
 
 // be careful using these inside if statements:
 #define SerialPrint(s) {if (ExecSerialTx) Serial.print(s);}
@@ -432,33 +432,35 @@ void Graph(bool NewCurve, TkindDUT kind, int Vcc, int Vce) {
 //-------------------------------------------------------------------------
 
 int GetNpnGain() {
-  int base, StartBase, hFE;
-  int VccStart = 8; // Starting current for hFE calc. (117 uA steps)
-  int VccEnd = 100; // Current for hFE calc. one (117 uA steps)
+  int base = 0;
+  int hFE = 0;
+  int StartBase = 0;
+  int VccStart = 3; // Starting current for hFE calc. (117 uA steps) - just over noice floor
+  int VccEnd = HfeVccEnd * 85 / 10; // Convert from 1 mA steps to 117 uA steps
   SetDacVcc(MaxDacVcc, 0);
   SetDacBase(MinDacBase, 20);
 
   for (base = MinDacBase; base <= MaxDacBase; base++) {
     SetDacBase(base, 2);
-    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) >= VccStart) { // Start point
-      StartBase = base;
+    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) >= VccStart) { // Start point where transistor starts to conduct
+      StartBase = base - 1;
       break;
     }
   }
-  for (base = MinDacBase; base <= MaxDacBase; base++) {
-    SetDacBase(base, 5);
-    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) >= VccEnd) { // Collector current through load resistor R3 (100R) in 0.117mA steps
-      hFE = float((VccEnd - VccStart) * 117.0) / ((base - StartBase) * 166.0 / 100.0);
-      TurnOffLoad(tkNPN);
 
-      if (base - StartBase <= 5) {
-        return 9999; // hFE too high to calculate
+  for (base = MinDacBase; base <= MaxDacBase; base++) {
+    SetDacBase(base, 2);
+    if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) >= VccEnd) { // Collector current through load resistor R3 (100R) in 0.117mA steps
+      hFE = float(VccEnd * 117.0) / ((base - BaseNpnFactor) * 166.0 / 100.0);
+      TurnOffLoad(tkNPN);
+      if (StartBase > 19) {
+        return -2; // hFE not possible to calculate - darlington transistor
       } else {
-        return (hFE);
+        return hFE;
       }
-    }
+    } 
   }
-  return 0;
+  return -1; // hFE not possible to calculate - collector current not reaching VccEnd
 }
 
 //-------------------------------------------------------------------------
@@ -469,19 +471,22 @@ int GetNpnGain() {
 //-------------------------------------------------------------------------
 
 int GetPnpGain() {
-  int base, StartBase, hFE;
-  int VccStart = 8; // Starting current for hFE calc. (117 uA steps)
-  int VccEnd = 100; // Current for hFE calc. one (117 uA steps)
+  int base = 0;
+  int hFE = 0;
+  int StartBase = 0;
+  int VccStart = 3; // Starting current for hFE calc. (117 uA steps)
+  int VccEnd = HfeVccEnd * 85 / 10; // Convert collector current for hFE calculation from 1 mA steps to 117 uA steps
   SetDacVcc(MinDacVcc, 0);
   SetDacBase(MaxDacBase, 20);
 
   for (base = MinDacBase; base <= MaxDacBase; base++) {
-    SetDacBase(MaxDacBase - base, 1);
-    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) >= VccStart) {// Start point
-      StartBase = base;
+    SetDacBase(MaxDacBase - base, 2);
+    if (GetAdcSmooth(pin_ADC_PNP_Vce) - GetAdcSmooth(pin_ADC_PNP_Vcc) > VccStart) { // Start point where transistor starts to conduct
+      StartBase = base - 1;
       break;
     }
   }
+
   SetDacBase(MaxDacBase, 10);
   for (base = MinDacBase; base <= MaxDacBase; base++) {
     SetDacBase(MaxDacBase - base, 1);
@@ -489,14 +494,14 @@ int GetPnpGain() {
       hFE = float((VccEnd - VccStart) * 117.0) / ((base - StartBase) * 166.0 / 100.0);
       TurnOffLoad(tkPNP);
 
-      if (base - StartBase <= 5) {
-        return 9999; // hFE too high to calculate
+      if (StartBase > 40) {
+        return -2; // hFE not possible to calculate - darlington transistor
       } else {
         return hFE;
       }
     }
   }
-  return 0;
+  return -1; // hFE not possible to calculate - collector current not reaching VccEnd
 }
 
 //-------------------------------------------------------------------------
@@ -512,7 +517,7 @@ int GetNMosfetThreshold() {
   SetDacVcc(MaxDacVcc, 0);
   SetDacBase(MinDacBase, 20);
   for (gate = MinDacBase; gate <= MaxDacBase; gate++) {
-    SetDacBase(gate, 1); // gate is approx in 50s of mV
+    SetDacBase(gate, 1); // gate is approx in 50 mV steps
     if (GetAdcSmooth(pin_ADC_NPN_Vcc) - GetAdcSmooth(pin_ADC_NPN_Vce) > 10) { // Voltage drop over load resistor R3 (100R) in 11.7 mV steps
       TurnOffLoad(tkNMOSFET);
       return float((gate * 11700.0) / MaxDacBase);
@@ -868,8 +873,7 @@ void DrawMainMenu(void) {
 
   // Draw supply voltage in V
   DrawStringAt(2,  TFT_HGT - 8, "Bat ", MediumFont, TFT_LIGHTGREY);
-  //DrawDecimal(GetAdcSmooth(pin_Adc_Bat) * readSupply() * (R6 + R7) / (100L * R7 * 1024), MediumFont, TFT_LIGHTGREY);
-  DrawString(dtostrf(GetAdcSmooth(pin_Adc_Bat) * readSupply() * (R6 + R7) / (1000.0 * R7 * 1024.0), 1, 2, str), MediumFont, TFT_LIGHTGREY);
+  DrawString(dtostrf(GetAdcSmooth(pin_Adc_Bat) * readSupply() * (R6 + R7) / (1000.0 * R7 * 1023.0), 1, 2, str), MediumFont, TFT_LIGHTGREY);
 
   switch (CurDUTclass) { // Draw top of Menu
     case tcMOSFET:
@@ -1069,8 +1073,8 @@ int FastIncDec(int IncDec) {
   static int FastCount = 0;
   int NewIncDec;
   if (millis() - FastTimer < 300) {
-    if (FastCount >  9) NewIncDec = IncDec * 10; // Faster inc/dec
-    if (FastCount > 15) NewIncDec = IncDec * 50; // Fastest inc/dec
+    if (FastCount >  8) NewIncDec = IncDec * 10; // Faster inc/dec
+    if (FastCount > 18) NewIncDec = IncDec * 50; // Fastest inc/dec
     FastCount ++;
   } else {
     NewIncDec = IncDec; // Orig. inc/dec
@@ -1099,11 +1103,13 @@ void ExecSetupMenu() {
   DrawMenuItem(2, 1, "Min base current", 0);
   DrawIncDecButton(2);
   DrawMenuItem(3, 1, "Max base current", 0);
-  DrawIncDecButton(3);
-  DrawMenuItem(4, 1, "Min gate voltage", 0);
   DrawIncDecButton(4);
-  DrawMenuItem(5, 1, "Max gate voltage", 0);
+  DrawMenuItem(4, 1, "Col. cur. for hFE", 0);
+  DrawIncDecButton(3);
+  DrawMenuItem(5, 1, "Min gate voltage", 0);
   DrawIncDecButton(5);
+  DrawMenuItem(6, 1, "Max gate voltage", 0);
+  DrawIncDecButton(6);
 
   DrawButton(TFT_WID - 54, TFT_HGT - 27, "Exit");
   while (!ExitButton) {
@@ -1149,18 +1155,26 @@ void ExecSetupMenu() {
 
       IncDec = TouchIncDec(4, x, y);
       if (FirstRun || IncDec != 0) {
-        MinVgate += FastIncDec(IncDec);
-        if (MinVgate < 0) MinVgate = 0;
-        if (MinVgate > MaxVgate) MinVgate = MaxVgate;
-        DrawMenuItem(4, 3, dtostrf(MinVgate / 10.0, 1, 1, str), 1);
+        HfeVccEnd += FastIncDec(IncDec);
+        if (HfeVccEnd < 1) HfeVccEnd = 1;
+        if (HfeVccEnd > 100) HfeVccEnd = 100; // Collector current for hFE calculation
+        DrawMenuItem(4, 3, dtostrf(HfeVccEnd, 1, 0, str), 1);
       }
 
       IncDec = TouchIncDec(5, x, y);
       if (FirstRun || IncDec != 0) {
+        MinVgate += FastIncDec(IncDec);
+        if (MinVgate < 0) MinVgate = 0;
+        if (MinVgate > MaxVgate) MinVgate = MaxVgate;
+        DrawMenuItem(5, 3, dtostrf(MinVgate / 10.0, 1, 1, str), 1);
+      }
+
+      IncDec = TouchIncDec(6, x, y);
+      if (FirstRun || IncDec != 0) {
         MaxVgate += FastIncDec(IncDec);
         if (MaxVgate < MinVgate) MaxVgate = MinVgate;
         if (MaxVgate > 120) MaxVgate = 120;
-        DrawMenuItem(5, 3, dtostrf(MaxVgate / 10.0, 1, 1, str), 1);
+        DrawMenuItem(6, 3, dtostrf(MaxVgate / 10.0, 1, 1, str), 1);
       }
 
       delay(100); // Delay for increase / decrease of parameter values
